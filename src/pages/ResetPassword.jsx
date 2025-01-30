@@ -1,22 +1,35 @@
 import { useState } from "react";
 import { supabase } from "../../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();  // Para acessar os parâmetros da URL
+
+  // Função para extrair o token da URL
+  const getTokenFromURL = () => {
+    const urlParams = new URLSearchParams(location.search);
+    return urlParams.get('token');  // Supondo que o token venha como parâmetro 'token'
+  };
 
   async function handleResetPassword(e) {
     e.preventDefault();
+    const token = getTokenFromURL();
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (token) {
+      const { error } = await supabase.auth.api
+        .resetPasswordForEmail(token, newPassword);
 
-    if (error) {
-      setMessage("Erro ao redefinir a senha: " + error.message);
+      if (error) {
+        setMessage("Erro ao redefinir a senha: " + error.message);
+      } else {
+        setMessage("Senha redefinida com sucesso!");
+        setTimeout(() => navigate("/login"), 2000);
+      }
     } else {
-      setMessage("Senha redefinida com sucesso!");
-      setTimeout(() => navigate("/login"), 2000);
+      setMessage("Token de redefinição inválido.");
     }
   }
 
