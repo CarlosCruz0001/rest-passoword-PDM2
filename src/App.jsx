@@ -1,15 +1,13 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./Home";
-import ResetPassword from "./ResetPassword";
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import ResetPassword from "./pages/ResetPassword"; // Certifique-se de que este arquivo existe
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/:token" element={<ResetPassword />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={<h1>Página Inicial</h1>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+    </Routes>
   );
 }
 
