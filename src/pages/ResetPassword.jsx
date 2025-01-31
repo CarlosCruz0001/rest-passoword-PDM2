@@ -19,8 +19,7 @@ export default function ResetPassword() {
     const token = getTokenFromURL();
 
     if (token) {
-      const { error } = await supabase.auth.api
-        .resetPasswordForEmail(token, newPassword);
+      const { error } = await supabase.auth.api.updateUser(token, { password: newPassword });
 
       if (error) {
         setMessage("Erro ao redefinir a senha: " + error.message);
