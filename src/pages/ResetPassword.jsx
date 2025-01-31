@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 import { useNavigate } from "react-router-dom";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [session, setSession] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Obtém a sessão do Supabase
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        setMessage("Sessão inválida ou expirada. Solicite um novo link de redefinição.");
+      } else {
+        setSession(data.session);
+      }
+    };
+    checkSession();
+  }, []);
 
   async function handleResetPassword(e) {
     e.preventDefault();
+
+    if (!session) {
+      setMessage("Sessão inválida. Solicite um novo link de redefinição.");
+      return;
+    }
 
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
