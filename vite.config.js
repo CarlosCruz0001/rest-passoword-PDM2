@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: '/', // Define o caminho base correto para o Vercel
   server: {
-    historyApiFallback: true
+    historyApiFallback: true // Garante que as rotas sejam tratadas corretamente
   }
-})
+});
