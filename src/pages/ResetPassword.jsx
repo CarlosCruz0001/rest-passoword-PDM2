@@ -5,17 +5,33 @@ import { useNavigate } from "react-router-dom";
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [isSessionValid, setIsSessionValid] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Verifica se o usuário chegou à página pelo link de redefinição
-    const params = new URLSearchParams(window.location.hash.replace("#", "?"));
-    const accessToken = params.get("access_token");
+  // Captura os tokens sincronamente durante a renderização inicial
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
 
-    if (!accessToken) {
-      setMessage("Link de redefinição inválido ou expirado. Solicite um novo.");
+  useEffect(() => {
+    if (!accessToken || !refreshToken) {
+      setMessage("Link inválido ou expirado. Solicite um novo.");
+      return;
     }
-  }, []);
+
+    // Configura a sessão com os tokens
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    })
+    .then(({ error }) => {
+      if (error) {
+        setMessage("Erro ao validar token: " + error.message);
+        return;
+      }
+      setIsSessionValid(true); // Sessão válida
+    });
+  }, [accessToken, refreshToken]);
 
   async function handleResetPassword(e) {
     e.preventDefault();
@@ -23,9 +39,9 @@ export default function ResetPassword() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     if (error) {
-      setMessage("Erro ao redefinir a senha: " + error.message);
+      setMessage("Erro ao redefinir: " + error.message);
     } else {
-      setMessage("Senha redefinida com sucesso!");
+      setMessage("Senha alterada com sucesso!");
       setTimeout(() => navigate("/login"), 2000);
     }
   }
@@ -40,8 +56,11 @@ export default function ResetPassword() {
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           required
+          disabled={!isSessionValid}
         />
-        <button type="submit">Alterar Senha</button>
+        <button type="submit" disabled={!isSessionValid}>
+          Alterar Senha
+        </button>
       </form>
       {message && <p>{message}</p>}
     </div>
