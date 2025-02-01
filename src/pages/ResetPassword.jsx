@@ -1,25 +1,24 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../../supabaseClient";
-import { useNavigate } from "react-router-dom";
-
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSessionValid, setIsSessionValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Novo estado
   const navigate = useNavigate();
 
-  // Captura os tokens sincronamente durante a renderização inicial
-  const hashParams = new URLSearchParams(window.location.hash.substring(1));
-  const accessToken = hashParams.get('access_token');
-  const refreshToken = hashParams.get('refresh_token');
-
   useEffect(() => {
+    // Captura os tokens DENTRO do useEffect
+    const queryParams = new URLSearchParams(window.location.search);
+    const accessToken = queryParams.get('access_token');
+    const refreshToken = queryParams.get('refresh_token');
+
     if (!accessToken || !refreshToken) {
       setMessage("Link inválido ou expirado. Solicite um novo.");
+      setIsLoading(false);
       return;
     }
 
-    // Configura a sessão com os tokens
+    setIsLoading(true);
+
     supabase.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken
@@ -29,12 +28,18 @@ export default function ResetPassword() {
         setMessage("Erro ao validar token: " + error.message);
         return;
       }
-      setIsSessionValid(true); // Sessão válida
-    });
-  }, [accessToken, refreshToken]);
+      setIsSessionValid(true);
+    })
+    .finally(() => setIsLoading(false));
+  }, []); // Dependências removidas
 
   async function handleResetPassword(e) {
     e.preventDefault();
+
+    if (newPassword.length < 6) {
+      setMessage("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
 
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
@@ -49,19 +54,23 @@ export default function ResetPassword() {
   return (
     <div className="container">
       <h2>Redefinir Senha</h2>
-      <form onSubmit={handleResetPassword}>
-        <input
-          type="password"
-          placeholder="Nova Senha"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          required
-          disabled={!isSessionValid}
-        />
-        <button type="submit" disabled={!isSessionValid}>
-          Alterar Senha
-        </button>
-      </form>
+      {isLoading ? (
+        <p>Validando token...</p>
+      ) : (
+        <form onSubmit={handleResetPassword}>
+          <input
+            type="password"
+            placeholder="Nova Senha"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            disabled={!isSessionValid}
+          />
+          <button type="submit" disabled={!isSessionValid}>
+            Alterar Senha
+          </button>
+        </form>
+      )}
       {message && <p>{message}</p>}
     </div>
   );
