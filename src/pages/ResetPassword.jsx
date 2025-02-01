@@ -6,14 +6,19 @@ export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSessionValid, setIsSessionValid] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Novo estado
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Captura os tokens DENTRO do useEffect
+    // Verifica se os tokens estão no hash ou na query string
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
-    const accessToken = queryParams.get('access_token');
-    const refreshToken = queryParams.get('refresh_token');
+    
+    // Prioriza os parâmetros do hash (comum em fluxos OAuth)
+    const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+
+    console.log("Tokens capturados:", { accessToken, refreshToken }); // Debug
 
     if (!accessToken || !refreshToken) {
       setMessage("Link inválido ou expirado. Solicite um novo.");
@@ -29,13 +34,15 @@ export default function ResetPassword() {
     })
     .then(({ error }) => {
       if (error) {
-        setMessage("Erro ao validar token: " + error.message);
+        console.error("Erro na sessão:", error); // Debug detalhado
+        setMessage(`Falha na validação: ${error.message}`);
         return;
       }
       setIsSessionValid(true);
+      setMessage(""); // Limpa mensagens de erro anteriores
     })
     .finally(() => setIsLoading(false));
-  }, []); // Dependências removidas
+  }, []);
 
   async function handleResetPassword(e) {
     e.preventDefault();
@@ -45,37 +52,47 @@ export default function ResetPassword() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-
-    if (error) {
-      setMessage("Erro ao redefinir: " + error.message);
-    } else {
-      setMessage("Senha alterada com sucesso!");
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      
+      if (error) throw error;
+      
+      setMessage("Senha redefinida com sucesso! Redirecionando...");
       setTimeout(() => navigate("/login"), 2000);
+    } catch (error) {
+      console.error("Erro na redefinição:", error); // Debug
+      setMessage(`Erro: ${error.message}`);
     }
   }
 
   return (
     <div className="container">
       <h2>Redefinir Senha</h2>
+      
       {isLoading ? (
-        <p>Validando token...</p>
+        <p>Validando token de acesso...</p>
       ) : (
         <form onSubmit={handleResetPassword}>
           <input
             type="password"
-            placeholder="Nova Senha"
+            placeholder="Nova senha"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
             disabled={!isSessionValid}
+            minLength={6}
           />
-          <button type="submit" disabled={!isSessionValid}>
-            Alterar Senha
+          <button 
+            type="submit" 
+            disabled={!isSessionValid}
+            className={!isSessionValid ? "disabled-button" : ""}
+          >
+            Redefinir Senha
           </button>
         </form>
       )}
-      {message && <p>{message}</p>}
+
+      {message && <p className={isSessionValid ? "success" : "error"}>{message}</p>}
     </div>
   );
 }

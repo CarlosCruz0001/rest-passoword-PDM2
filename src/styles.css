@@ -78,3 +78,15 @@ body {
     font-weight: 400;
   }
   
+  .disabled-button {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .error {
+    color: red;
+  }
+  
+  .success {
+    color: green;
+  }
