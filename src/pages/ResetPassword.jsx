@@ -48,7 +48,7 @@ export default function ResetPassword() {
 
   return (
     <div className="container">
-      <h2>Redefinir Senha</h2>
+      <h2>Bem vindo ao App</h2>
       <form onSubmit={handleResetPassword}>
         <input
           type="password"
